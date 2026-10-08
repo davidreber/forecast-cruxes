@@ -1,0 +1,29 @@
+cff-version: 1.2.0
+message: "If you use this package, please cite the paper."
+title: "forecast-cruxes"
+version: 0.4.0
+date-released: 2026-10-08
+license: MIT
+repository-code: "https://github.com/davidreber/forecast-cruxes"
+authors:
+  - family-names: Reber
+    given-names: David
+    email: davidpreber@gmail.com
+    affiliation: "University of Chicago"
+preferred-citation:
+  type: article
+  title: "Can LLMs Anticipate Their Cruxes?"
+  year: 2026
+  notes: "arXiv preprint, forthcoming"
+  authors:
+    - family-names: Reber
+      given-names: David
+      affiliation: "University of Chicago"
+    - family-names: Reber
+      given-names: James
+    - family-names: Holtzman
+      given-names: Ari
+      affiliation: "University of Chicago"
+    - family-names: Veitch
+      given-names: Victor
+      affiliation: "University of Chicago"
