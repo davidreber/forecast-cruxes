@@ -1,0 +1,64 @@
+{
+  "note": "A worked example of the input the package takes. Three invented questions, six distinct premises in each pool. introspected is what a forecaster stated in advance would decide the question; extracted is what forecasts of the question were later found to disagree on. In drug-approval-by-june the first extracted premise appears twice more, once exactly and once with a double space, as it would when several pairs of forecasts disagree on the same thing; both commands report these two repeats as removed before selection. Nothing here comes from a study.",
+  "questions": [
+    {
+      "question_id": "rail-tunnel-opens-2027",
+      "introspected": [
+        "Will the tunnel boring be finished before the winter shutdown?",
+        "Will the regulator issue the safety certificate without further conditions?",
+        "Will the signalling system pass its integration test on the first attempt?",
+        "Will the operator have enough certified drivers by the opening date?",
+        "Will the final cost exceed the revised budget by more than ten percent?",
+        "Will a legal challenge from the neighbouring district delay the opening?"
+      ],
+      "extracted": [
+        "Does the tunnel carry fare paying passengers at any point during 2027?",
+        "Is the remaining excavation complete before the winter weather stops work?",
+        "Does the safety regulator attach extra conditions to the certificate?",
+        "Have the published accounts shown an overrun above ten percent?",
+        "Is the contractor the same one that delivered the previous line late?",
+        "Do the unions call industrial action during the commissioning period?"
+      ]
+    },
+    {
+      "question_id": "drug-approval-by-june",
+      "introspected": [
+        "Will the phase three trial meet its primary endpoint?",
+        "Will the agency convene an advisory committee before deciding?",
+        "Will the manufacturing site pass its pre-approval inspection?",
+        "Will the safety signal seen in the earlier trial recur at scale?",
+        "Will the agency's review clock be extended by a major amendment?",
+        "Will a competing product reach the market first?"
+      ],
+      "extracted": [
+        "Did the trial hit its primary endpoint at the pre-specified significance?",
+        "Is an advisory committee meeting scheduled before the decision date?",
+        "Was the manufacturing site cleared at inspection?",
+        "Did the trial hit its primary endpoint at the pre-specified significance?",
+        "How common was the liver enzyme elevation in the larger population?",
+        "Is the sponsor's regulatory track record good enough to avoid delay?",
+        "Did the trial hit its primary  endpoint at the pre-specified significance?",
+        "Does the agency treat this as a priority review?"
+      ]
+    },
+    {
+      "question_id": "election-turnout-above-sixty",
+      "introspected": [
+        "Will the weather on polling day be unusually bad?",
+        "Will postal voting be expanded before the election?",
+        "Will the two main parties be within three points in the final polls?",
+        "Will the new identification requirement reduce turnout among young voters?",
+        "Will turnout in the last comparable election be beaten?",
+        "Will a major national event fall in the same week?"
+      ],
+      "extracted": [
+        "Does the closeness of the race drive people to the polls?",
+        "How many postal ballots are issued compared with the previous cycle?",
+        "Does the identification rule suppress turnout in the youngest age band?",
+        "Is polling day a working day or a holiday?",
+        "Did the previous election of this type clear sixty percent?",
+        "Are the campaigns spending on turnout operations or on persuasion?"
+      ]
+    }
+  ]
+}

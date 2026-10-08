@@ -1,0 +1,11 @@
+# This directory is the package, and its JSON files are source: fixtures, the
+# worked example. The research repository around it ignores *.json everywhere;
+# the first rule undoes that for everything under pkg/, so no package file can
+# be produced, used and silently left out of a commit (decision S17, proposal 3).
+!*.json
+
+__pycache__/
+*.egg-info/
+build/
+dist/
+.pytest_cache/
