@@ -41,6 +41,7 @@ def set_inclusion_curve(
     with_permutation: bool = True,
     n_permutations: int = DEFAULT_N_PERMUTATIONS,
     permutation_seed=default_permutation_seed,
+    with_clusters: bool = False,
 ) -> dict:
     """Venn decomposition at every contrast count from one to the maximum.
 
@@ -54,7 +55,11 @@ def set_inclusion_curve(
 
     Returns ``{contrasts_per_side: record}`` where the record holds the Venn
     counts and fractions and, when asked for, the permutation null under the
-    key ``permutation``.
+    key ``permutation``. With ``with_clusters`` the record also carries the
+    clustering itself: ``clusters``, the partition of the item ids as a list of
+    lists (ids are ``introspected:i`` and ``extracted:j``, the cache's
+    ``item_ids``), and ``clustering``, the cut's ``n_clusters`` and
+    ``max_lifetime``. Off by default so recorded curves replay unchanged.
     """
     similarity = np.asarray(aggregate(matrices), dtype=float)
     ids = matrices.item_ids
@@ -72,10 +77,16 @@ def set_inclusion_curve(
             continue
 
         sub_ids = [ids[i] for i in indices]
-        clusters, _ = consensus_clustering(similarity[np.ix_(indices, indices)], sub_ids)
+        clusters, diagnostics = consensus_clustering(similarity[np.ix_(indices, indices)], sub_ids)
         introspected = introspected_ids(sub_ids)
 
         record = venn_decomposition(clusters, introspected)
+        if with_clusters:
+            record["clusters"] = [list(cluster) for cluster in clusters]
+            record["clustering"] = {
+                "n_clusters": diagnostics.n_clusters,
+                "max_lifetime": diagnostics.max_lifetime,
+            }
         if with_permutation:
             record["permutation"] = permutation_null(
                 clusters,

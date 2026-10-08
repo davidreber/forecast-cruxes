@@ -9,7 +9,7 @@ stops the run. Nothing is ever overwritten.
 
 ``--dry-run`` reports the work without loading the model, which is the cheap
 way to find out what a run will cost and the only part of this module that
-works without a GPU.
+works without the ``gpu`` extra.
 """
 
 from __future__ import annotations
@@ -29,7 +29,9 @@ def build_parser() -> argparse.ArgumentParser:
         description="Score every pair of selected premises for every question (GPU).",
     )
     add_shared_arguments(parser)
-    parser.add_argument("--device", default="cuda")
+    parser.add_argument(
+        "--device", default="cuda", help="cuda (default), cuda:N, mps or cpu; see load_reranker."
+    )
     parser.add_argument(
         "--array-task-id",
         type=int,
@@ -63,7 +65,8 @@ def main(argv=None) -> int:
     print(f"criterion:  {settings.criterion.name}")
     print(f"model:      {settings.model_name} @ {settings.model_revision} ({settings.dtype})")
     print(f"batch size: {settings.batch_size} (fixed)")
-    print(f"selection:  at most {settings.max_contrasts_per_side} a side, seed {settings.seed}")
+    print(f"device:     {args.device}")
+    print(f"selection:  at most {settings.max_contrasts_per_side} a side, seed {settings.seed}", flush=True)
 
     todo, seen = [], set()
     for entry in planned:
@@ -92,9 +95,9 @@ def main(argv=None) -> int:
             for pool in ("introspected", "extracted")
         )
     )
-    print(f"\n{len(todo)} caches to write, {sum(n for _, n in todo)} prompts in total")
+    print(f"\n{len(todo)} caches to write, {sum(n for _, n in todo)} prompts in total", flush=True)
     if args.dry_run:
-        print("dry run, nothing written")
+        print("dry run, nothing written", flush=True)
         return 0
     if not todo:
         print("every question already has a cache with this key, nothing to do")
@@ -111,7 +114,7 @@ def main(argv=None) -> int:
         dtype=settings.dtype,
         max_length=settings.max_length,
     )
-    print(f"model loaded in {time.time() - started:.0f}s: {reranker.environment}")
+    print(f"model loaded in {time.time() - started:.0f}s: {reranker.environment}", flush=True)
 
     for entry, n_prompts in todo:
         question_started = time.time()
@@ -133,7 +136,7 @@ def main(argv=None) -> int:
             flush=True,
         )
 
-    print(f"done in {time.time() - started:.0f}s")
+    print(f"done in {time.time() - started:.0f}s", flush=True)
     return 0
 
 

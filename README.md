@@ -110,8 +110,10 @@ and installs the same import name; do not install both in one environment.
 ### Requirements
 
 - Python 3.10 or later.
-- The scoring stage (`cruxes-score`) needs a CUDA GPU with memory for an 8B
-  parameter model in float16. The authors used A100 80GB and H200 class GPUs.
+- The scoring stage (`cruxes-score`) needs a CUDA or Apple (MPS) GPU with
+  memory for an 8B parameter model in float16; see "Devices" below (`cpu` is
+  accepted but impractical for the 8B model). The authors used A100 80GB and
+  H200 class GPUs.
 - Its first run downloads about 16 GB: `Qwen/Qwen3-Reranker-8B` at the pinned
   revision, from the Hugging Face Hub. No token is needed. `HF_HOME` chooses
   the cache directory.
@@ -177,6 +179,7 @@ for entry in plan(args.premises, settings):  # one entry per question, sorted by
         settings.max_contrasts_per_side,
         question_id,
         permutation_seed=lambda q, c: default_permutation_seed(q, c, settings.seed),
+        with_clusters=True,  # as cruxes-report does by default; omit for the bare counts
     )
 
 report = summarize_curves(curves, settings.max_contrasts_per_side)
@@ -214,6 +217,14 @@ in words, the total removed per pool, how many questions had repeats in each
 pool, and the counts per question. A dry run of the worked example reports two
 repeats removed from one extracted pool.
 
+Each per question record of the report also carries the clustering behind its
+counts, `clusters` (the partition of the item ids `introspected:i` and
+`extracted:j`) and `clustering` (`n_clusters`, `max_lifetime`), and
+`metadata.items[question_id]` maps every item id of that question to its
+premise text, so a report can be read without its caches. `--no-clusters`
+leaves `clusters` and `clustering` out and sets `metadata.clusters_recorded`
+to false. Both are new in 0.4.1; the tagged v0.4.0 install writes neither.
+
 ## One default per research choice
 
 The package is small primitives (dedupe, select, score, aggregate, cluster,
@@ -246,34 +257,50 @@ numbers within the tolerances the verification repository defines, not
 exactly. Those tolerances, the expected numbers and the verdict live in
 [forecast-cruxes-verify](https://github.com/davidreber/forecast-cruxes-verify).
 
-## Known limitations (v0.4.0)
+## Devices
 
-- The scoring stage requires a CUDA device: `load_reranker` checks
-  `torch.cuda.is_available()` and calls `torch.cuda` functions
-  unconditionally, so `--device mps` or `--device cpu` does not work. A reader
-  reported that the 8B model runs on Apple MPS in float16 with a 20-line
-  patch; that will be considered for a later version. That reader measured
-  about 2.3 prompts/s on real cruxes on an Apple M5; a question with 25 + 25
-  premises is 4,900 prompts.
-- The `set_inclusion` report records the Venn counts, the fractions and the
-  permutation null per question, but not the cluster memberships or the
-  `ClusteringDiagnostics` (`n_clusters`, `max_lifetime`); reconstruct them
-  through the Python API with `aggregate_scores` and `consensus_clustering`
-  (or `linkage_from_similarity`, `optimal_cluster_count` and
-  `clusters_at_resolution`).
-- The package picks no representative crux for a cluster.
+`cruxes-score --device` takes `cuda` (the default), `cuda:N`, `mps` or `cpu`
+(new in 0.4.1; the tagged v0.4.0 install accepts `cuda` only). The 8B
+reranker runs on an Apple GPU through MPS in float16 at about 2.3 prompts a
+second for premise pairs on an M5 (a question with 25 + 25 premises is 4,900
+prompts). MPS float16 scores are not bit-identical to CUDA float16 scores; the
+cache's `environment` block records the device, the key does not, and that
+difference is what the verification repository's tolerances are for. `cpu` is
+accepted with a warning: the 8B model would take days there. A 0.6B reranker
+(`--model-name Qwen/Qwen3-Reranker-0.6B --model-revision <a commit of that
+repository>`; the default `--model-revision` is the 8B's commit) scores a
+worked-example question of 264 prompts in about three minutes on an M5's CPU
+and in seconds on its GPU, but scores every pair of the worked example below
+0.5, so every premise ends up alone.
+
+## Known limitations
+
+- The package picks no representative crux for a cluster; the report lists
+  every member and leaves the choice to the reader.
 - The longest-lifetime cut can put most of a pool into one cluster when the
   premises are long and similar to one another (a reader saw 35 of 44 premises
   in one cluster at a mean pairwise similarity of 0.46 under the `resolution`
-  criterion); the worked example's short premises do not show this.
+  criterion); the worked example's short premises do not show this. The
+  report's `clustering` block (`n_clusters`, `max_lifetime`) shows when it
+  happens; `clusters_at_resolution` cuts at a count of your own.
 - The paper's baselines are composed in the verification repository, not
-  here, and a second premise set passed under its own question id gets its own
-  seeded draw, so reproducing one selection for a baseline needs the Python
-  API (`derive_seed` and `select_prefix` in `src/cruxes/selection.py`).
-- `cruxes-score` does not flush its header lines, so a log redirected to a
-  file stays empty until the first batch is scored.
-- Newer transformers (5.x) prints a progress bar for loading the weights to
-  stderr.
+  here. A second premise set passed under its own question id gets its own
+  seeded draw, so to compare a baseline pool against the very selection the
+  main question got, order the baseline's `extracted` pool with the inverse of
+  the package's own permutation under the baseline id:
+
+  ```python
+  import numpy as np
+  from cruxes import EXTRACTED, PremiseSet, derive_seed, select_premises
+
+  _, selected = select_premises(PremiseSet("q1", introspected, extracted), 25, 42)
+  perm = np.random.default_rng(derive_seed(42, "q1-baseline", EXTRACTED)).permutation(len(selected))
+  pool = [None] * len(selected)
+  for k, index in enumerate(perm):
+      pool[index] = selected[k]
+  # _, again = select_premises(PremiseSet("q1-baseline", baseline_introspected, pool), 25, 42)
+  # again == selected, in the same order.
+  ```
 
 ## Tests
 
@@ -281,7 +308,7 @@ exactly. Those tolerances, the expected numbers and the verdict live in
 pip install -e '.[test]' && pytest tests
 ```
 
-190 tests, CPU only, no model download, no network.
+198 tests, CPU only, no model download, no network.
 `tests/test_developer_replay.py` replays recorded matrices bit for bit as a
 check of the arithmetic; it is not what verifying the paper means. The wheel
 is built from `src/cruxes` alone, so the test fixtures (described in

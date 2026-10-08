@@ -8,7 +8,7 @@ clusters draw from both. That count, against a label shuffling null, is the
 measurement this package implements, for any forecaster and any question.
 
 Two stages, two commands. ``cruxes-score`` scores every pair of selected
-premises with a cross encoder and needs a GPU and the ``gpu`` extra.
+premises with a cross encoder and needs the ``gpu`` extra and, in practice, a GPU.
 ``cruxes-report`` turns the scores into the report and needs numpy and scipy
 only. Importing this package never imports torch.
 
@@ -61,7 +61,7 @@ from .setinclusion import set_inclusion_curve, summarize_curves
 from .stats import mean_and_error
 from .venn import INTROSPECTED_PREFIX, introspected_ids, venn_counts, venn_decomposition
 
-__version__ = "0.4.0"
+__version__ = "0.4.1.dev0"
 
 __all__ = [
     "CACHE_FORMAT_VERSION",

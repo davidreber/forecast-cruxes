@@ -221,3 +221,42 @@ def test_the_shipped_example_file_reads():
     introspected, extracted = select_premises(repeated, 25)
     assert len(introspected) == 6
     assert len(extracted) == len({normalize_premise_text(text) for text in extracted}) == 6
+
+
+def test_the_report_carries_the_clusters_and_the_item_texts(tmp_path, recorded):
+    premises = tmp_path / "questions.json"
+    premise_set = write_premise_file(premises, recorded)
+    cache_dir = tmp_path / "caches"
+    cache_from_fixture(cache_dir, premise_set, recorded, count=3, seed=7)
+
+    out_dir = tmp_path / "out"
+    assert report_main(
+        ["--premises", str(premises), "--cache-dir", str(cache_dir), "--out-dir", str(out_dir),
+         "--max-contrasts-per-side", "3", "--no-permutation", "--seed", "7"]
+    ) == 0
+    report = json.loads(next(out_dir.glob("set_inclusion_*.json")).read_text())
+    assert report["metadata"]["clusters_recorded"] is True
+    record = report["per_contrasts_per_side"]["3"]["per_question"]["fixture-question"]
+    ids = sorted(item for cluster in record["clusters"] for item in cluster)
+    assert len(ids) == len(set(ids)) == 6
+    assert record["clustering"]["n_clusters"] == len(record["clusters"]) == record["total"]
+    # metadata.items maps each id to the premise the package's own selection put there,
+    # in selection order, not file order (seed 7 permutes both pools)
+    from cruxes import select_premises
+
+    introspected, extracted = select_premises(premise_set, 3, 7)
+    expected = {f"introspected:{i}": text for i, text in enumerate(introspected)}
+    expected.update({f"extracted:{j}": text for j, text in enumerate(extracted)})
+    assert report["metadata"]["items"]["fixture-question"] == expected
+    assert expected != dict(zip(expected, list(premise_set.introspected[:3]) + list(premise_set.extracted[:3])))
+
+    out_dir_2 = tmp_path / "out2"
+    assert report_main(
+        ["--premises", str(premises), "--cache-dir", str(cache_dir), "--out-dir", str(out_dir_2),
+         "--max-contrasts-per-side", "3", "--no-permutation", "--no-clusters", "--seed", "7"]
+    ) == 0
+    report_2 = json.loads(next(out_dir_2.glob("set_inclusion_*.json")).read_text())
+    assert report_2["metadata"]["clusters_recorded"] is False
+    record_2 = report_2["per_contrasts_per_side"]["3"]["per_question"]["fixture-question"]
+    assert "clusters" not in record_2 and "clustering" not in record_2
+    assert {k: record_2[k] for k in record_2} == {k: record[k] for k in record_2}
