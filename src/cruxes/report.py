@@ -13,6 +13,12 @@ The report is written as ``set_inclusion_{UTC timestamp}.json`` inside
 ``--out-dir``, created exclusively. There is no ``_latest`` link and no way to
 name an existing file.
 
+Each per question record carries the clustering that produced its counts
+(``clusters``, the partition of the item ids, and ``clustering``, the cut's
+diagnostics) unless ``--no-clusters`` is given, and ``metadata.items`` maps
+every item id to its premise text, so the report can be read without the
+cache. The package still picks no representative member of a cluster.
+
 numpy and scipy only. Importing this module does not import torch.
 """
 
@@ -45,6 +51,11 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Skip the label shuffling null, which is most of the run time.",
     )
+    parser.add_argument(
+        "--no-clusters",
+        action="store_true",
+        help="Leave the cluster memberships and diagnostics out of each record.",
+    )
     return parser
 
 
@@ -60,13 +71,15 @@ def main(argv=None) -> int:
     planned = plan(args.premises, settings, args.questions)
     with_permutation = not args.no_permutation
 
-    loaded, missing = {}, []
+    loaded, missing, items = {}, [], {}
     for entry in planned:
         path = find_cached_scores(args.cache_dir, entry.key)
         if path is None:
             missing.append(entry.premise_set.question_id)
             continue
-        loaded[entry.premise_set.question_id] = (load_score_matrices(path, entry.pools), path.name)
+        matrices = load_score_matrices(path, entry.pools)
+        loaded[entry.premise_set.question_id] = (matrices, path.name)
+        items[entry.premise_set.question_id] = dict(zip(matrices.item_ids, entry.key.premises))
 
     if missing:
         print(f"{len(missing)} questions have no score cache under {args.cache_dir}:")
@@ -84,6 +97,7 @@ def main(argv=None) -> int:
             with_permutation=with_permutation,
             n_permutations=args.permutations,
             permutation_seed=lambda q, c: default_permutation_seed(q, c, settings.seed),
+            with_clusters=not args.no_clusters,
         )
         print(f"  {question_id}: {cache_name}")
 
@@ -101,6 +115,8 @@ def main(argv=None) -> int:
         "n_permutations": args.permutations if with_permutation else 0,
         "deduplication": deduplication_summary(planned),
         "score_caches": {q: name for q, (_, name) in loaded.items()},
+        "items": items,
+        "clusters_recorded": not args.no_clusters,
     }
     report = summarize_curves(
         curves, args.max_contrasts_per_side, metadata=metadata, with_permutation=with_permutation

@@ -144,3 +144,29 @@ def test_summarize_curves_uses_the_new_key_names():
     assert "k" not in entry
     assert "per_matchup" not in entry
     assert "n_matchups" not in entry["summary"]
+
+
+# -- with_clusters -----------------------------------------------------------
+
+
+def test_set_inclusion_curve_records_clusters_only_when_asked():
+    from cruxes.venn import venn_counts
+
+    matrices = make_cross_pool_matrices()
+    plain = set_inclusion_curve(matrices, 2, "q", with_permutation=False)
+    assert "clusters" not in plain[2] and "clustering" not in plain[2]
+
+    rich = set_inclusion_curve(matrices, 2, "q", with_permutation=False, with_clusters=True)
+    record = rich[2]
+    ids = sorted(item for cluster in record["clusters"] for item in cluster)
+    assert ids == ["extracted:0", "extracted:1", "introspected:0", "introspected:1"]
+    assert record["clustering"]["n_clusters"] == len(record["clusters"]) == record["total"]
+    assert record["clustering"]["max_lifetime"] > 0
+    shared, introspected_only, extracted_only = venn_counts(
+        record["clusters"], {"introspected:0", "introspected:1"}
+    )
+    assert (record["shared"], record["introspected_only"], record["extracted_only"]) == (
+        shared, introspected_only, extracted_only
+    )
+    # the Venn numbers themselves are unchanged by asking for the clusters
+    assert {k: plain[2][k] for k in plain[2]} == {k: record[k] for k in plain[2]}

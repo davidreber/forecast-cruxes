@@ -18,9 +18,11 @@ the same thing, so the scores are comparable with the paper's.
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 
 __all__ = [
+    "check_device",
     "RERANKER_MODEL_NAME",
     "RERANKER_REVISION",
     "RERANKER_MAX_LENGTH",
@@ -78,6 +80,46 @@ class LoadedReranker:
     environment: dict = field(default_factory=dict)
 
 
+def check_device(device: str, torch) -> None:
+    """Raise unless ``device`` is ``cuda``, ``cuda:N``, ``mps`` or ``cpu`` and usable.
+
+    ``cuda`` and ``cuda:N`` need ``torch.cuda.is_available()`` and an ordinal
+    below ``torch.cuda.device_count()``; ``mps`` needs
+    ``torch.backends.mps.is_available()``. ``cpu`` is accepted with a warning
+    on stderr: the eight billion parameter cross encoder on CPU is not a slower
+    answer, it is a job that never finishes, but a small reranker passed with
+    ``--model-name`` runs there in minutes. Any other string is a ValueError,
+    raised here, before any weights are loaded. Takes the torch module as an
+    argument so the check can be tested without torch.
+    """
+    cuda = re.fullmatch(r"cuda(?::([0-9]+))?", device)
+    if cuda:
+        if not torch.cuda.is_available():
+            raise RuntimeError(
+                "the reranker scoring stage was asked for a CUDA device and "
+                "torch.cuda.is_available() returned False"
+            )
+        count = torch.cuda.device_count()
+        if int(cuda.group(1) or 0) >= count:
+            raise ValueError(f"unknown device {device!r}: torch.cuda.device_count() is {count}")
+    elif device == "mps":
+        if not torch.backends.mps.is_available():
+            raise RuntimeError(
+                "--device mps was given and torch.backends.mps.is_available() returned False"
+            )
+    elif device == "cpu":
+        import sys
+
+        print(
+            "warning: scoring on CPU; the default 8B reranker takes days there, "
+            "a 0.6B one minutes",
+            file=sys.stderr,
+            flush=True,
+        )
+    else:
+        raise ValueError(f"unknown device {device!r}: use cuda, cuda:N, mps or cpu")
+
+
 def load_reranker(
     model_name: str = RERANKER_MODEL_NAME,
     revision: str = RERANKER_REVISION,
@@ -87,20 +129,21 @@ def load_reranker(
 ) -> LoadedReranker:
     """Load the tokenizer, the base model and the yes-minus-no projection.
 
-    Requires a CUDA device. Raises rather than falling back to CPU, because an
-    eight billion parameter cross encoder on CPU is not a slower answer, it is
-    a job that never finishes.
+    ``device`` is ``cuda`` by default; ``mps`` runs the 8B model in float16 on
+    an Apple GPU (about 2.3 prompts a second on an M5 for premise pairs); see
+    :func:`check_device` for ``cpu``. The device is recorded in the cache's
+    ``environment`` block and is not part of the cache key.
     """
     import torch
     import transformers
     from transformers import AutoModelForCausalLM, AutoTokenizer
 
     torch_dtype = getattr(torch, dtype)
-    if not torch.cuda.is_available():
-        raise RuntimeError(
-            "the reranker scoring stage needs a CUDA device and "
-            "torch.cuda.is_available() returned False"
-        )
+    check_device(device, torch)
+    try:  # transformers 5 prints a weight loading progress bar to stderr
+        transformers.utils.logging.disable_progress_bar()
+    except AttributeError:
+        pass
 
     tokenizer = AutoTokenizer.from_pretrained(
         model_name, revision=revision, padding_side="left",
@@ -139,12 +182,16 @@ def load_reranker(
     import gc
 
     gc.collect()
-    torch.cuda.empty_cache()
+    if device.startswith("cuda"):
+        torch.cuda.empty_cache()
+    elif device == "mps":
+        torch.mps.empty_cache()
 
     environment = {
         "torch": torch.__version__,
         "transformers": transformers.__version__,
-        "gpu": torch.cuda.get_device_name(0),
+        "device": device,
+        "gpu": torch.cuda.get_device_name(device) if device.startswith("cuda") else device,
         "cuda": torch.version.cuda,
     }
     return LoadedReranker(

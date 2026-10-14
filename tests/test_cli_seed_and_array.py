@@ -73,6 +73,11 @@ def _dry_run(tmp_path: Path, capsys, extra: list) -> str:
     return capsys.readouterr().out
 
 
+def test_the_dry_run_header_names_the_device(tmp_path, capsys):
+    """A dry run returns before the device is checked, so any name is safe here."""
+    assert "device:     mps" in _dry_run(tmp_path, capsys, ["--device", "mps"])
+
+
 def test_array_tasks_partition_the_questions_without_overlap(tmp_path, capsys):
     seen = []
     for task in range(2):
