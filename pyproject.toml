@@ -25,8 +25,8 @@ dependencies = [
 
 [project.urls]
 Homepage = "https://github.com/davidreber/forecast-cruxes"
-"Data release" = "https://github.com/davidreber/forecast-cruxes-data"
-Verification = "https://github.com/davidreber/forecast-cruxes-verify"
+"Data release" = "https://github.com/davidreber/forecast-cruxes-reproduce"
+Verification = "https://github.com/davidreber/forecast-cruxes-reproduce"
 
 [project.optional-dependencies]
 # The cross encoder scoring stage. Everything else runs without it, and a test

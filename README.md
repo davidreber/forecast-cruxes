@@ -4,11 +4,11 @@
 Cruxes?" by David Reber, James Reber, Ari Holtzman and Victor Veitch
 (University of Chicago). The paper's numbers were verified with this code;
 the verdict is in the verification repository
-([VERIFICATION.md](https://github.com/davidreber/forecast-cruxes-verify/blob/main/VERIFICATION.md)).
+([VERIFICATION.md](https://github.com/davidreber/forecast-cruxes-reproduce/blob/main/VERIFICATION.md)).
 Companion repositories:
 
-- data release: [forecast-cruxes-data](https://github.com/davidreber/forecast-cruxes-data)
-- expected numbers and verdict: [forecast-cruxes-verify](https://github.com/davidreber/forecast-cruxes-verify)
+- data release: [forecast-cruxes-data](https://github.com/davidreber/forecast-cruxes-reproduce)
+- expected numbers and verdict: [forecast-cruxes-verify](https://github.com/davidreber/forecast-cruxes-reproduce)
 
 ## What it measures
 
@@ -34,9 +34,9 @@ prompts of the generation stage (prediction and extraction) are printed
 verbatim in the paper's appendix.
 
 The package ships no data and no recorded numbers. The paper's data are in
-[forecast-cruxes-data](https://github.com/davidreber/forecast-cruxes-data);
+[forecast-cruxes-data](https://github.com/davidreber/forecast-cruxes-reproduce);
 the paper's expected numbers, their tolerances and the verdict are in
-[forecast-cruxes-verify](https://github.com/davidreber/forecast-cruxes-verify).
+[forecast-cruxes-verify](https://github.com/davidreber/forecast-cruxes-reproduce).
 
 ### Glossary
 
@@ -79,7 +79,7 @@ options, so it shows the file format, not the paper's crux format.
 The prompts for scouting, forecasting, zero-shot prediction and pairwise
 extraction are printed verbatim in the paper's appendix "Prompts"; they are
 not shipped as code. The paper's actual pools are in the data release,
-[forecast-cruxes-data](https://github.com/davidreber/forecast-cruxes-data).
+[forecast-cruxes-data](https://github.com/davidreber/forecast-cruxes-reproduce).
 
 The package ships one matching criterion, `resolution` (the paper's middle
 level). The strict (`equivalence`) and broad (`debate`) criteria are in the
@@ -244,7 +244,7 @@ A rerun from the data release selects its own 25 premises per pool and scores
 them in fixed batches on its own hardware, so it reproduces the paper's
 numbers within the tolerances the verification repository defines, not
 exactly. Those tolerances, the expected numbers and the verdict live in
-[forecast-cruxes-verify](https://github.com/davidreber/forecast-cruxes-verify).
+[forecast-cruxes-verify](https://github.com/davidreber/forecast-cruxes-reproduce).
 
 ## Known limitations (v0.4.0)
 

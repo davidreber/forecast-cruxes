@@ -3,7 +3,7 @@
 These files are inputs to the CPU test suite. They are test fixtures, not the
 paper's numbers: none of them is a result the paper reports, and passing the
 tests is not verification of the paper (see
-[forecast-cruxes-verify](https://github.com/davidreber/forecast-cruxes-verify)
+[forecast-cruxes-verify](https://github.com/davidreber/forecast-cruxes-reproduce)
 for that). They are not installed with the package.
 
 All three were recorded on the authors' cluster. What each one records about
