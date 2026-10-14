@@ -8,7 +8,7 @@ repository-code: "https://github.com/davidreber/forecast-cruxes"
 authors:
   - family-names: Reber
     given-names: David
-    email: davidpreber@gmail.com
+    email: reber@uchicago.edu
     affiliation: "University of Chicago"
 preferred-citation:
   type: article
